@@ -3,17 +3,7 @@ import sys
 sys.path.append('lib/')
 
 import bot_helper.bot.client as client
-import bot_helper.resources.message_handler as message_handler
 import bot_helper.resources.spreadsheet as spreadsheet
-
-
-def sample_function(message):
-    return 'Message from {0.author}: {0.content}'.format(message), message.channel
-
-
-def processes_wrapper(message, handler):
-    return handler.process_message(message.content), message.channel
-
 
 # Get API Keys
 secret_input = open('data/secret.json')
