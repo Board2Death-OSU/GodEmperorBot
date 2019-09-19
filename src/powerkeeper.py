@@ -85,14 +85,14 @@ class PowerKeeper:
 
         # Calculate the loss and make it happen
         loss = int(score * len(players) / 5.0)
-        msg = '{0} -{1}'.format(house, loss * len(players))
+        msg = '{0} -{1}'.format(house, loss)
         self.process_score_message(msg, author, time)
         response = ''
 
         # Construct a response for each player's death (for marriage sake)
         for player in players:
             response += 'House {0} lost {1} power from player {2} dying\n'.format(
-                house, loss, player)
+                house, int(loss / len(players)), player)
         return response
 
 
