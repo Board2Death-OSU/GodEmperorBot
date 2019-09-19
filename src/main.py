@@ -3,30 +3,53 @@ import sys
 sys.path.append('lib/')
 
 import bot_helper.bot.client as client
-import bot_helper.resources.spreadsheet as spreadsheet
+import power_table
+import powerkeeper
+
+
+def score_callback(msg, keeper):
+    """
+    The Callback to handle message processing for the score keeping functionality.
+    """
+
+    # Gather information from the message object
+    channel = msg.channel
+    message = msg.content.upper()
+    time = str(msg.created_at)
+    author = str(msg.author)
+    response = ''
+
+    # Check if this is a kill command
+    response += keeper.check_player_deaths(message, author, time)
+
+    # Don't add score based on the house of those that died.
+    if response == '':
+        response += keeper.process_score_message(
+            message, author, time)
+
+    # Check if a score table was requested.
+    if '!SCORE' in message:
+        response += keeper.display_scores()
+    return response, channel
+
 
 # Get API Keys
 secret_input = open('data/secret.json')
 keys = json.load(secret_input)
 secret_input.close()
 
-# Get Responses
-response_input = open('data/responses.json')
-responses = json.load(response_input)
-response_input.close()
-
-# Create Message Handler
-handler = message_handler.get_handler(responses)
-
 # Create Bot
 client = client.Client()
 
-# Register Callback Functions
-client.register_on_message_callback(sample_function, [])
-client.register_on_message_callback(processes_wrapper, [handler])
-
 # Make Spreadsheet
-sheet = spreadsheet.Spreadsheet(keys['sheet_id'], 'data/token.json', 'data/credentials.json')
+sheet = power_table.PowerTable(
+    keys['sheet_id'], 'data/token.json', 'data/credentials.json')
+
+# Create Score Keeper
+keeper = powerkeeper.get_inst(sheet)
+
+# Register Score Keeping Callback
+client.register_on_message_callback(score_callback, [keeper])
 
 # Start Client
 client.run(keys['discord_token'])
