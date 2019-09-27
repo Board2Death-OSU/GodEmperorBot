@@ -19,6 +19,23 @@ class PowerTable(spreadsheet.Spreadsheet):
         """
         return self.read_column('CurrentPower', 'B', '3', '11')
 
+    def write_display(self) -> None:
+        """
+        Writes current scores to the display page, with an x in the ones place
+        """
+        def convert_score(score):
+            """
+            Changes the last digit of the score into an x
+            """
+            score = list(score)
+            score[-1] = 'x'
+            return ''.join(score)
+        scores = self.get_scores()
+        result = []
+        for score in scores:
+            result.append(convert_score(score))
+        self.write_column('DisplayPower', 'C', '3', '11', result)
+
     def write_entry(self, house, score, author, time) -> str:
         """
         Writes the associated row in the Power table for a Power change

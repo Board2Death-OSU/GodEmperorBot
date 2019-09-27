@@ -1,6 +1,8 @@
 import json
 from typing import List, Tuple
 import re
+import utl.power_table as power_table
+import utl.marriage_handler as marriage_handler
 
 
 class PowerKeeper:
@@ -12,10 +14,10 @@ class PowerKeeper:
         data: dict = json.loads(data_in.read())
         data_in.close()
 
-        self.house_names = data['house_names']
+        self.house_names: List[str] = data['house_names']
         self.houses: List[str] = data['houses']
         self.spreadsheet = spreadsheet
-
+        self.scores = {}
         # Generate House Regex
         reg_ex_str = '('
         for house in self.houses:
@@ -25,6 +27,7 @@ class PowerKeeper:
         # Save Regex's
         self.house_regex = re.compile(reg_ex_str)
         self.score_regex = re.compile('\+?-?\d+')
+        self.read_scores()
 
     def process_score_message(self, message: str, author: str, time: str) -> str:
         """
@@ -45,9 +48,31 @@ class PowerKeeper:
         response = ''
         if score_change is not None and len(houses) > 0:
             for house in houses:
+                self.scores[house] += int(score_change)
                 response += self.spreadsheet.write_entry(
                     house, score_change, author, time)
+        self.spreadsheet.write_display()
+        self.write_scores()
         return response
+
+    def read_scores(self) -> None:
+        """
+        Initializes score dictionary with the current scores in the spreadsheet
+        """
+        print('Reading scores')
+        values = self.spreadsheet.read_column('ScoreTest', 'B', '4', '12')
+        for house, value in zip(self.houses, values):
+            self.scores[house] = int(value)
+
+    def write_scores(self) -> None:
+        """
+        Saves current scores to the score table on the spreadsheet
+        """
+        print('Writing Scores')
+        values = []
+        for value in self.scores.values():
+            values.append(value)
+        self.spreadsheet.write_column('ScoreTest', 'B', '4', '12', values)
 
     def check_player_deaths(self, message: str, author: str, time: str) -> str:
         """
@@ -89,11 +114,35 @@ class PowerKeeper:
         self.process_score_message(msg, author, time)
         response = ''
 
-        # Construct a response for each player's death (for marriage sake)
+        players.sort(reverse=True)
+
+        # Construct a response for each player's death (for f sake)
         for player in players:
+
+            # Check if the player is married
+            partner = self.marriage_handler.in_marriage(house, player)
+            if partner is not None:
+                # Give the Spouse of the Dying Player Power
+                mh = partner[0:3]
+                mp = partner[4]
+                msg = '{0} + {1}'.format(mh, int(loss / len(players)))
+                self.process_score_message(msg, author, time)
+                response += 'House {0} got {1} power from player {2} dying due to marriage\n'.format(
+                    mh, int(loss / len(players)), player)
+
+                # Death Ends a Marriage
+                self.marriage_handler.remove_marriage(house, player)
+
             response += 'House {0} lost {1} power from player {2} dying\n'.format(
                 house, int(loss / len(players)), player)
+
+        # Promote Necessary Players after a death
+        for player in players:
+            self.marriage_handler.promote_team(house, player)
         return response
+
+    def register_marriage_handler(self, handler):
+        self.marriage_handler = handler
 
 
 def get_inst(spreadsheet):
