@@ -21,11 +21,11 @@ class MarriageHandler:
         self.player_regex = re.compile(reg_ex_str[0:-1] + ')\s?(1|2|3|4|5)')
         self.read_marriages()
 
-    def parse_message(self, message: str) -> str:
+    def parse_message(self, message: str, channel_name: str) -> str:
         """
         Checks if a message is a marriage command, and performs the appropriate operations
         """
-        if '!MARRY' in message.upper():
+        if '!MARRY' in message.upper() and channel_name == 'logistics':
             matches = re.findall(self.player_regex, message)
             players = [match for match in matches]
             if len(players) < 2:
@@ -113,7 +113,7 @@ def get_callback_function(houses: List[str], powertable) -> Tuple[callable, List
         """
         A simple callback function for marriage handling
         """
-        response = handler.parse_message(message.content)
+        response = handler.parse_message(message.content, str(message.channel))
         return (response, message.channel)
 
     return (marriage_callback, [handler])

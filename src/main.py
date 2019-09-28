@@ -26,11 +26,12 @@ def score_callback(msg, keeper):
     response = ''
 
     # Check if this is a kill command
-    response += keeper.check_player_deaths(message, author, time)
-    # Don't add score based on the house of those that died.
-    if response == '' and '!' not in message:
-        response += keeper.process_score_message(
-            message, author, time)
+    if str(msg.channel) == 'logistics':
+        response += keeper.check_player_deaths(message, author, time)
+        # Don't add score based on the house of those that died.
+        if response == '' and '!' not in message:
+            response += keeper.process_score_message(
+                message, author, time)
 
     # Check if a score table was requested.
     if '!SCORE' in message:
